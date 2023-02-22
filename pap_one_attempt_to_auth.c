@@ -3,6 +3,27 @@
 #include <string.h>
 #include <ctype.h>
 
+typedef enum login_input 
+{
+    RAR_PLUS,
+    RAR_MINUS,  
+}INPUT;
+
+
+typedef enum login_output
+{
+    SAA,
+    SAN
+    
+}OUTPUT;
+
+typedef enum program_state
+{
+    ACK,
+    OPEN,
+    CLOSE
+}STATE;
+
 char *strtrim(char *s) {
     char *end = (char*)(s + strlen(s) - 1);
     
@@ -52,34 +73,40 @@ int check_login(char *login, char *password) {
 }
 
 int pap_fsm_next_state(int state, int input) {
-    int next_state;
 
-    if(state == 0 && input == 0)
+    if(state == ACK && input == RAR_PLUS)
     {
-        printf("\ni=%s\to=SAA\n\n", (input==0)?"RAR+":"RAR-"); //OUTPUT
-        next_state = 1;
+        printf("\ni=%s\to=SAA\n\n", (input==RAR_PLUS)?"RAR+":"RAR-"); //OUTPUT
+        state = OPEN;
     }
-    else if(state == 0 && input == 1)
+    else if(state == ACK && input == RAR_MINUS)
     {
-        printf("\ni=%s\to=SAN\n\n", (input==0)?"RAR+":"RAR-"); //OUTPUT
-        next_state = 2;
+        printf("\ni=%s\to=SAN\n\n", (input==RAR_PLUS)?"RAR+":"RAR-"); //OUTPUT
+        state = CLOSE;
     }
 
-    else if(state == 2 && input == 0)
+    else if(state == CLOSE && input == RAR_PLUS)
     {
-        printf("\ni=%s\to=SAN\n\n", (input==0)?"RAR+":"RAR-"); //OUTPUT
-        next_state = 2;
+        printf("\ni=%s\to=SAN\n\n", (input==RAR_PLUS)?"RAR+":"RAR-"); //OUTPUT
+        state = ACK;
     }
-    else if(state == 2 && input == 1)
+    else if(state == CLOSE && input == RAR_MINUS)
     {
-        printf("\ni=%s\to=SAN\n\n", (input==0)?"RAR+":"RAR-"); //OUTPUT
-        next_state = 2;
+        printf("\ni=%s\to=SAN\n\n", (input==RAR_PLUS)?"RAR+":"RAR-"); //OUTPUT
+        state = CLOSE;
     }
-    else 
+
+    else if(state == OPEN && input == RAR_PLUS)
     {
-        next_state = -1;
+        printf("\ni=%s\to=SAA\n\n", (input==RAR_PLUS)?"RAR+":"RAR-"); //OUTPUT
+        state = OPEN;
     }
-    return next_state;
+    else if(state == OPEN && input == RAR_MINUS)
+    {
+        printf("\ni=%s\to=SAN\n\n", (input==RAR_PLUS)?"RAR+":"RAR-"); //OUTPUT
+        state = OPEN;
+    }
+    return state;
 }
 
 void pap_fsm() {
@@ -89,10 +116,7 @@ void pap_fsm() {
     //int number_of_states = 5;
     int state = 0;
     int input;
-    int next_state;
 
-    int i = 0;
-    // while (i <= 40) {
     int work_flag = 1;
     while (1) {
         printf("User: ");
@@ -104,67 +128,11 @@ void pap_fsm() {
             printf ("502 - Error readning standard input!\n");
         
         int input = check_login(user, password);
-        //int input = rand() % 2;
         state = pap_fsm_next_state(state, input);
-        if ((state == 1) && (next_state == 1) && (state == 4) && (next_state == 4)) {
-            work_flag = 0;
-        }
     }
-}
-
-int pap_attempt(int input, int tries) {
-    int success = 0;
-    if((input == 1) && (tries >= 0) && (tries < 3))
-    {
-        printf("\ni=%s\to=SAN\n\n", (input==0)?"RAR+":"RAR-"); //OUTPUT
-    }
-    else if(input == 0 && (tries >= 0) && (tries < 3))
-    {
-        printf("\ni=%s\to=SAA\n\n", (input==0)?"RAR+":"RAR-"); //OUTPUT
-        success = 1;
-    }
-    else if ((input>=0) && (input<=1) && (tries>=0) && (tries<3))
-    {
-        printf("\ni=%s\to=SAN\n\n", (input==0)?"RAR+":"RAR-"); //OUTPUT
-    }
-    return success;
-}
-
-int pap()
-{
-    char *user = NULL;
-    char *password = NULL;
-    size_t nu = 0, np = 0;
-    //int success = 0, tries = 0;
-    int success = 0;
-    int tries = 0;
-    int input;
-    
-    while((tries <= 3) && (success == 0))
-    {
-        /*
-        printf("User: ");
-        if(getline(&user, &nu, stdin) == -1)
-            printf ("502 - Error readning standard input!\n");
-        printf("Password: ");
-        if(getline(&password, &np, stdin) == -1)
-            printf ("502 - Error readning standard input!\n");
-        input = check_login(user, password); 
-        */
-        input = rand() % 2;
-        success = pap_attempt(input, tries);
-        tries = tries + 1;
-
-    }
-    free(user); 
-    free(password);
-    
-    return 0;
-
 }
 
 int main() {
     pap_fsm();
-    //pap();
     return 0;
 }
